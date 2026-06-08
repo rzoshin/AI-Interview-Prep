@@ -70,6 +70,17 @@ class QuestionRepository implements IRepository<IQuestionDocument, CreateQuestio
     return Question.findOne({ contentHash }).lean() as unknown as Promise<IQuestionDocument | null>;
   }
 
+  async findSimilar(text: string, limit = 5): Promise<IQuestionDocument[]> {
+    await connectDB();
+    return Question.find(
+      { $text: { $search: text }, isPublished: true },
+      { score: { $meta: "textScore" } }
+    )
+      .sort({ score: { $meta: "textScore" } })
+      .limit(limit)
+      .lean() as unknown as Promise<IQuestionDocument[]>;
+  }
+
   async create(dto: CreateQuestionDTO): Promise<IQuestionDocument> {
     await connectDB();
     const question = await Question.create(dto);

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -15,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useSidebarStore } from "@/stores/sidebar.store";
@@ -33,6 +35,8 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggle } = useSidebarStore();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
 
   return (
     <motion.aside
@@ -95,7 +99,32 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-2 border-t border-border">
+      <div className="p-2 border-t border-border space-y-1">
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              pathname.startsWith("/admin") && "bg-primary/10 text-primary"
+            )}
+          >
+            <Shield className="w-5 h-5 shrink-0" />
+            <AnimatePresence initial={false}>
+              {!isCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="truncate overflow-hidden"
+                >
+                  Admin Panel
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Link>
+        )}
         <Link
           href="/profile"
           className={cn(
