@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  Layers,
   Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/questions", icon: BookOpen, label: "Questions" },
   { href: "/learn/study", icon: Brain, label: "Study Mode" },
   { href: "/learn/quiz", icon: GraduationCap, label: "Quiz Mode" },
+  { href: "/learn/flashcards", icon: Layers, label: "Flashcards" },
   { href: "/learn/mock-interview", icon: MessageSquare, label: "Mock Interview" },
   { href: "/progress", icon: TrendingUp, label: "Progress" },
   { href: "/roadmap", icon: Map, label: "Roadmap" },

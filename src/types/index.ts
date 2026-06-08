@@ -48,7 +48,7 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-export type AIModel = "gpt-5" | "claude" | "gemini";
+export type AIModel = "gpt-5" | "claude" | "gemini" | "groq";
 
 export interface IAIAnswer {
   _id: string;

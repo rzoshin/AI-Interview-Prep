@@ -4,6 +4,7 @@ export const CACHE_TTL = {
   QUESTIONS_LIST: 600,      // 10 min
   QUESTION_SINGLE: 1800,    // 30 min
   AI_ANSWER: 86400,         // 24 h
+  TOPIC_QUIZ: 86400,        // 24 h
   TOPICS_ALL: 3600,         // 1 h
   PROGRESS: 300,            // 5 min
 } as const;
@@ -13,6 +14,7 @@ export const CACHE_KEYS = {
     `q:list:${topicId}:${page}:${filtersHash}`,
   questionSingle: (questionId: string) => `q:single:${questionId}`,
   aiAnswer: (questionId: string) => `ai:answer:${questionId}`,
+  topicQuiz: (topicId: string) => `ai:quiz:${topicId}`,
   topicsAll: () => `topics:all`,
   progress: (userId: string) => `progress:${userId}`,
 } as const;

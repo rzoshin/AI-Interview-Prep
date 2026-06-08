@@ -16,7 +16,7 @@ export interface CreateAIAnswerDTO {
   follow_up_questions: string[];
   related_topics: string[];
   quiz_questions: QuizQuestion[];
-  generatedBy: "gpt-5" | "claude" | "gemini";
+  generatedBy: "gpt-5" | "claude" | "gemini" | "groq";
   promptVersion: string;
 }
 

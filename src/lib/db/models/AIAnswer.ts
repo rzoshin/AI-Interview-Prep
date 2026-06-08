@@ -19,7 +19,7 @@ export interface IAIAnswerDocument extends Document {
   follow_up_questions: string[];
   related_topics: string[];
   quiz_questions: QuizQuestionSchema[];
-  generatedBy: "gpt-5" | "claude" | "gemini";
+  generatedBy: "gpt-5" | "claude" | "gemini" | "groq";
   promptVersion: string;
   createdAt: Date;
   updatedAt: Date;
@@ -48,7 +48,7 @@ const AIAnswerSchema = new Schema<IAIAnswerDocument>(
     follow_up_questions: [{ type: String }],
     related_topics: [{ type: String }],
     quiz_questions: [QuizQuestionSubSchema],
-    generatedBy: { type: String, enum: ["gpt-5", "claude", "gemini"], required: true },
+    generatedBy: { type: String, enum: ["gpt-5", "claude", "gemini", "groq"], required: true },
     promptVersion: { type: String, required: true },
   },
   { timestamps: true }
