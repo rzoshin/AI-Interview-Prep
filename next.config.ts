@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactCompiler: true,
+  // React Compiler is expensive in dev (runs Babel over every file on top of
+  // Turbopack). Keep it for production builds only, so local dev stays fast.
+  reactCompiler: process.env.NODE_ENV === "production",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },

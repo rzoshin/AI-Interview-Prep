@@ -26,7 +26,20 @@ interface ExtractionResult {
 const CHUNK_SIZE = 6000;
 const MAX_CHUNKS = 10;
 
+const OPENAI_MODEL = "gpt-4o-mini";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Groq exposes an OpenAI-compatible API, so we reuse the same SDK pointed at
+// their endpoint. Used as a fallback when the primary (OpenAI) call fails
+// (e.g. quota exceeded). Only initialised when a key is configured.
+const groq = process.env.GROQ_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: "https://api.groq.com/openai/v1",
+    })
+  : null;
 
 async function extractTextFromBuffer(buffer: Buffer): Promise<{ text: string; numpages: number }> {
   // Dynamic import to avoid Next.js build-time issues with pdf-parse
@@ -46,6 +59,36 @@ function chunkText(text: string, size: number): string[] {
     start = boundary + 1;
   }
   return chunks.filter((c) => c.length > 50);
+}
+
+async function callLLM(
+  client: OpenAI,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<ExtractedQuestion[]> {
+  const response = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.1,
+    response_format: { type: "json_object" },
+    max_tokens: 4000,
+  });
+
+  const content = response.choices[0]?.message?.content ?? "{}";
+  const parsed = JSON.parse(content);
+  const items: ExtractedQuestion[] = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray(parsed.questions)
+    ? parsed.questions
+    : [];
+
+  return items.filter(
+    (q) => q.question && q.question.length >= 10 && q.topic && q.difficulty
+  );
 }
 
 async function extractQuestionsFromChunk(chunk: string, source: string): Promise<ExtractedQuestion[]> {
@@ -68,31 +111,130 @@ Return JSON array format:
 [{"question": "...", "topic": "...", "difficulty": "easy|medium|hard", "tags": ["tag1", "tag2"]}]`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      max_tokens: 4000,
-    });
-
-    const content = response.choices[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(content);
-    const items: ExtractedQuestion[] = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray(parsed.questions)
-      ? parsed.questions
-      : [];
-
-    return items.filter(
-      (q) => q.question && q.question.length >= 10 && q.topic && q.difficulty
+    return await callLLM(openai, OPENAI_MODEL, systemPrompt, userPrompt);
+  } catch (error) {
+    if (!groq) throw error;
+    console.warn(
+      `[pdf.extract] OpenAI call failed (${
+        error instanceof Error ? error.message : "unknown error"
+      }). Falling back to Groq (${GROQ_MODEL}).`
     );
-  } catch {
-    return [];
+    return callLLM(groq, GROQ_MODEL, systemPrompt, userPrompt);
   }
+}
+
+// Maps detectable keywords (matched against question text) to a canonical topic.
+const TOPIC_KEYWORDS: Array<{ topic: string; patterns: RegExp[] }> = [
+  { topic: "React", patterns: [/\breact\b/i, /\bjsx\b/i, /\bhooks?\b/i, /\buseState\b/i, /\buseEffect\b/i] },
+  { topic: "TypeScript", patterns: [/\btypescript\b/i, /\bts\b/i, /\binterface\b/i, /\bgenerics?\b/i] },
+  { topic: "JavaScript", patterns: [/\bjavascript\b/i, /\bjs\b/i, /\bclosure\b/i, /\bpromise\b/i, /\basync\b/i, /\bevent loop\b/i, /\bhoisting\b/i] },
+  { topic: "CSS", patterns: [/\bcss\b/i, /\bflexbox\b/i, /\bgrid\b/i, /\bselector\b/i] },
+  { topic: "HTML", patterns: [/\bhtml\b/i, /\bsemantic\b/i, /\bdom\b/i] },
+  { topic: "Node.js", patterns: [/\bnode\.?js\b/i, /\bexpress\b/i, /\bmiddleware\b/i, /\bnpm\b/i] },
+  { topic: "System Design", patterns: [/\bsystem design\b/i, /\bscalab/i, /\bload balanc/i, /\bcaching\b/i, /\bmicroservice/i] },
+  { topic: "Databases", patterns: [/\bsql\b/i, /\bdatabase\b/i, /\bmongodb\b/i, /\bindex(es|ing)?\b/i, /\bnormaliz/i, /\bjoin\b/i] },
+  { topic: "Data Structures & Algorithms", patterns: [/\bdata structure/i, /\balgorithm/i, /\bbig o\b/i, /\bcomplexity\b/i, /\bsort(ing)?\b/i, /\blinked list\b/i, /\bbinary tree\b/i] },
+];
+
+function deriveTopicFromFileName(source: string): string {
+  const base = source
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\bq\s*&?\s*a\b/gi, "")
+    .replace(/\bqna\b/gi, "")
+    .replace(/\bquestions?\b/gi, "")
+    .replace(/\banswers?\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return base.length >= 2 ? base : "General";
+}
+
+function deriveTopicAndTags(question: string, fallbackTopic: string): { topic: string; tags: string[] } {
+  const tags: string[] = [];
+  let topic: string | null = null;
+
+  for (const { topic: t, patterns } of TOPIC_KEYWORDS) {
+    if (patterns.some((p) => p.test(question))) {
+      if (!topic) topic = t;
+      tags.push(t);
+    }
+  }
+
+  return { topic: topic ?? fallbackTopic, tags };
+}
+
+function cleanQuestionText(raw: string): string {
+  return raw
+    .replace(/^\s*(?:q(?:uestion)?\s*\d*\s*[:.\-)]?\s*)/i, "")
+    .replace(/^\s*\d+\s*[.):\-]\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Dependency-free parser used when the LLM is unavailable (e.g. quota exceeded).
+// Detects questions from common interview-PDF patterns and derives best-effort
+// topic/difficulty/tags locally, returning the same shape as the AI path.
+function heuristicExtract(text: string, source: string): ExtractedQuestion[] {
+  const fallbackTopic = deriveTopicFromFileName(source);
+  const candidates: string[] = [];
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  const prefixPattern = /^\s*(?:q(?:uestion)?\s*\d*\s*[:.\-)]|\d+\s*[.):\-])\s*/i;
+
+  let buffer = "";
+  const flush = () => {
+    if (buffer) {
+      candidates.push(buffer);
+      buffer = "";
+    }
+  };
+
+  for (const line of lines) {
+    if (prefixPattern.test(line)) {
+      // New labeled/numbered question starts here.
+      flush();
+      buffer = line;
+    } else if (buffer) {
+      // Continuation of the current question until it terminates.
+      buffer += " " + line;
+    } else if (line.endsWith("?")) {
+      // Standalone question line with no prefix.
+      candidates.push(line);
+    }
+
+    if (buffer.includes("?")) {
+      // Stop accumulating once the question mark is reached.
+      flush();
+    }
+  }
+  flush();
+
+  const seen = new Set<string>();
+  const results: ExtractedQuestion[] = [];
+
+  for (const candidate of candidates) {
+    const cleaned = cleanQuestionText(candidate);
+    if (cleaned.length < 10) continue;
+
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const { topic, tags } = deriveTopicAndTags(cleaned, fallbackTopic);
+    results.push({
+      question: cleaned,
+      topic,
+      difficulty: "medium",
+      tags,
+      source,
+    });
+  }
+
+  return results;
 }
 
 class PDFService {
@@ -134,12 +276,45 @@ class PDFService {
       const { text, numpages } = await extractTextFromBuffer(buffer);
 
       const chunks = chunkText(text, CHUNK_SIZE);
-      const allExtracted: ExtractedQuestion[] = [];
-
-      for (const chunk of chunks) {
-        const questions = await extractQuestionsFromChunk(chunk, upload.originalName);
-        allExtracted.push(...questions);
+      console.log(
+        `[pdf.extract] ${upload.originalName}: ${numpages} pages, ${text.length} chars of text, ${chunks.length} chunk(s) to process.`
+      );
+      if (chunks.length === 0) {
+        console.warn(
+          "[pdf.extract] No usable text extracted. The PDF may be image-based/scanned (needs OCR) or empty."
+        );
       }
+
+      let allExtracted: ExtractedQuestion[] = [];
+      let aiError: unknown = null;
+
+      try {
+        for (const chunk of chunks) {
+          const questions = await extractQuestionsFromChunk(chunk, upload.originalName);
+          allExtracted.push(...questions);
+        }
+      } catch (error) {
+        aiError = error;
+        console.error("[pdf.extract] OpenAI extraction failed:", error);
+      }
+
+      // Fall back to the dependency-free parser when the LLM fails (e.g. quota
+      // exceeded) or produces nothing usable.
+      if (aiError || allExtracted.length === 0) {
+        const reason = aiError
+          ? aiError instanceof Error
+            ? aiError.message
+            : "AI error"
+          : "no AI results";
+        allExtracted = heuristicExtract(text, upload.originalName);
+        console.log(
+          `[pdf.extract] AI unavailable/empty (${reason}); used heuristic parser -> ${allExtracted.length} question(s).`
+        );
+      }
+
+      console.log(
+        `[pdf.extract] Extracted ${allExtracted.length} raw question(s) from ${chunks.length} chunk(s).`
+      );
 
       // Dedup within the extracted set (same chunk may repeat)
       const seen = new Set<string>();

@@ -1,4 +1,4 @@
-import { redis } from "./client";
+import { redis, isRedisConfigured } from "./client";
 
 export const CACHE_TTL = {
   QUESTIONS_LIST: 600,      // 10 min
@@ -18,6 +18,7 @@ export const CACHE_KEYS = {
 } as const;
 
 async function get<T>(key: string): Promise<T | null> {
+  if (!isRedisConfigured()) return null;
   try {
     const value = await redis.get<T>(key);
     return value ?? null;
@@ -27,6 +28,7 @@ async function get<T>(key: string): Promise<T | null> {
 }
 
 async function set(key: string, value: unknown, ttlSeconds: number): Promise<void> {
+  if (!isRedisConfigured()) return;
   try {
     await redis.set(key, value, { ex: ttlSeconds });
   } catch {
@@ -35,6 +37,7 @@ async function set(key: string, value: unknown, ttlSeconds: number): Promise<voi
 }
 
 async function del(...keys: string[]): Promise<void> {
+  if (!isRedisConfigured()) return;
   try {
     if (keys.length > 0) await redis.del(...keys);
   } catch {
@@ -43,6 +46,7 @@ async function del(...keys: string[]): Promise<void> {
 }
 
 async function invalidatePattern(prefix: string): Promise<void> {
+  if (!isRedisConfigured()) return;
   try {
     let cursor = 0;
     do {

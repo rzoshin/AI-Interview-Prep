@@ -30,8 +30,6 @@ interface UploadRecord {
   expanded: boolean;
 }
 
-export const metadata = { title: "PDF Upload" };
-
 export default function AdminPDFUploadPage() {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [isDragging, setIsDragging] = useState(false);

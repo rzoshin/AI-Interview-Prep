@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor, LogOut, User, Menu, Bell } from "lucide-react";
@@ -9,6 +10,11 @@ export function Topbar() {
   const { data: session } = useSession();
   const { setTheme, theme } = useTheme();
   const { setMobileOpen, isMobileOpen } = useSidebarStore();
+  const [mounted, setMounted] = useState(false);
+
+  // Theme is only known on the client. Render a stable icon on the server and
+  // first client render to avoid a hydration mismatch, then show the real one.
+  useEffect(() => setMounted(true), []);
 
   const themeIcons = {
     light: <Sun className="h-4 w-4" />,
@@ -40,7 +46,9 @@ export function Topbar() {
           className="flex items-center justify-center w-9 h-9 rounded-lg border border-border hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
           aria-label="Toggle theme"
         >
-          {themeIcons[theme as keyof typeof themeIcons] ?? themeIcons.system}
+          {mounted
+            ? themeIcons[theme as keyof typeof themeIcons] ?? themeIcons.system
+            : themeIcons.system}
         </button>
 
         <button className="relative flex items-center justify-center w-9 h-9 rounded-lg border border-border hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">

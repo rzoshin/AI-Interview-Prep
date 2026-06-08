@@ -55,9 +55,20 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
     async jwt({ token, user }) {
+      // On initial sign-in, sync id + role from the MongoDB user document.
+      // This is required for OAuth (Google), whose `user` object has no Mongo
+      // _id or role — without this the session id is the OAuth id (not a valid
+      // ObjectId) and the role always defaults to "user".
       if (user) {
-        token.id = user.id;
-        token.role = (user as { role?: string }).role ?? "user";
+        await connectDB();
+        const dbUser = await User.findOne({ email: user.email }).lean();
+        if (dbUser) {
+          token.id = dbUser._id.toString();
+          token.role = dbUser.role ?? "user";
+        } else {
+          token.id = user.id;
+          token.role = (user as { role?: string }).role ?? "user";
+        }
       }
       return token;
     },
