@@ -33,6 +33,14 @@ export interface KnowledgeGraphData {
 const H_GAP = 220;
 const V_GAP = 140;
 
+function isPopulatedTopic(topic: unknown): topic is ITopic {
+  return (
+    typeof topic === "object" &&
+    topic !== null &&
+    "_id" in topic
+  );
+}
+
 function masteryLevel(score: number): MasteryLevel {
   if (score <= 0) return "none";
   if (score < 50) return "weak";
@@ -140,10 +148,9 @@ async function loadRelatedTopicPairs(topics: ITopic[]): Promise<Array<[string, s
     const question = await questionRepository.findById(String(answer.question));
     if (!question) continue;
 
-    const sourceTopicId =
-      typeof question.topic === "object" && question.topic
-        ? String((question.topic as ITopic)._id)
-        : String(question.topic);
+    const sourceTopicId = isPopulatedTopic(question.topic)
+    ? String(question.topic._id)
+    : String(question.topic);
 
     for (const name of related) {
       const targetId = matchTopicId(name, topics);
