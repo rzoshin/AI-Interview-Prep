@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useTopicQuiz } from "../hooks/useTopicQuiz";
+import { useRecordQuiz } from "../hooks/useRecordQuiz";
 import type { QuizQuestion } from "@/types/index";
 
 interface QuizRunnerProps {
@@ -70,6 +71,7 @@ export function QuizRunner({ topicId }: QuizRunnerProps) {
     <QuizGame
       key={quizKey}
       quiz={quiz}
+      topicId={topicId}
       topicName={topicName}
       onRegenerate={regenerate}
       isRegenerating={isRegenerating}
@@ -79,21 +81,35 @@ export function QuizRunner({ topicId }: QuizRunnerProps) {
 
 function QuizGame({
   quiz,
+  topicId,
   topicName,
   onRegenerate,
   isRegenerating,
 }: {
   quiz: QuizQuestion[];
+  topicId: string;
   topicName: string | null;
   onRegenerate: () => void;
   isRegenerating: boolean;
 }) {
+  const recordQuiz = useRecordQuiz(topicId);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(() =>
     new Array(quiz.length).fill(null)
   );
   const [finished, setFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(SECONDS_PER_QUESTION);
+
+  // Record the result into progress once, when the quiz transitions to finished.
+  useEffect(() => {
+    if (!finished) return;
+    const correct = answers.reduce<number>(
+      (acc, a, i) => (a === quiz[i].correctIndex ? acc + 1 : acc),
+      0
+    );
+    void recordQuiz(correct, quiz.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   const goNext = useCallback(() => {
     setCurrent((c) => {
@@ -133,7 +149,7 @@ function QuizGame({
   }
 
   if (finished) {
-    const score = answers.reduce(
+    const score = answers.reduce<number>(
       (acc, a, i) => (a === quiz[i].correctIndex ? acc + 1 : acc),
       0
     );

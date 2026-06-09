@@ -20,6 +20,8 @@ export interface IProgressDocument extends Document {
   strongAreas: mongoose.Types.ObjectId[];
   readinessScore: number;
   quizHistory: QuizHistoryEntrySchema[];
+  /** UTC calendar days (YYYY-MM-DD) with at least one study/quiz/interview activity. */
+  activityDates: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +53,7 @@ const ProgressSchema = new Schema<IProgressDocument>(
     strongAreas: [{ type: Schema.Types.ObjectId, ref: "Topic" }],
     readinessScore: { type: Number, min: 0, max: 100, default: 0 },
     quizHistory: [QuizHistorySubSchema],
+    activityDates: [{ type: String }],
   },
   { timestamps: true }
 );

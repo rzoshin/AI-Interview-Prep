@@ -6,6 +6,7 @@ import { ArrowLeft, Sparkles, Loader2, AlertCircle, RefreshCw, Brain, Graduation
 import { cn } from "@/lib/utils/cn";
 import { useAIAnswer } from "../hooks/useAIAnswer";
 import { AnswerTabs } from "./AnswerTabs";
+import { useMarkStudied } from "@/features/progress/hooks/useMarkStudied";
 import type { IQuestion, ITopic } from "@/types/index";
 
 interface QuestionDetailViewProps {
@@ -38,6 +39,9 @@ export function QuestionDetailView({ id }: QuestionDetailViewProps) {
   const question = data?.data;
 
   const { answer, isLoading: answerLoading, isGenerating, error, generate } = useAIAnswer(id);
+
+  // Count the question as completed once its answer is on screen.
+  useMarkStudied(id, !!answer);
 
   if (questionLoading) {
     return (

@@ -58,6 +58,25 @@ export const interviewEvaluationSchema = z.object({
 
 export type InterviewEvaluation = z.infer<typeof interviewEvaluationSchema>;
 
+// Shape of the AI-generated learning roadmap (json_object mode). Resilient
+// defaults so a partial model response still parses.
+export const roadmapMilestoneSchema = z.object({
+  topicSlug: z.string().catch("").default(""),
+  title: z.string().catch("").default(""),
+  description: z.string().catch("").default(""),
+});
+
+export const roadmapSchema = z.object({
+  level: z
+    .enum(["beginner", "intermediate", "advanced", "interview-ready"])
+    .catch("beginner")
+    .default("beginner"),
+  summary: z.string().catch("").default(""),
+  milestones: z.array(roadmapMilestoneSchema).catch([]).default([]),
+});
+
+export type GeneratedRoadmap = z.infer<typeof roadmapSchema>;
+
 // Supported OpenAI neural TTS voices.
 export const OPENAI_TTS_VOICES = [
   "alloy",

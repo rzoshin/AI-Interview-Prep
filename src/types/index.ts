@@ -125,10 +125,17 @@ export interface IProgress {
   strongAreas: string[];
   readinessScore: number;
   quizHistory: QuizHistoryEntry[];
+  activityDates: string[];
+  /** Derived from activityDates; not stored in MongoDB. */
+  streakDays?: number;
 }
 
 export interface RoadmapMilestone {
-  topicId: string;
+  topicId?: string;
+  topicSlug: string;
+  title: string;
+  description: string;
+  order: number;
   completed: boolean;
 }
 
@@ -138,6 +145,7 @@ export interface IRoadmap {
   _id: string;
   user: string | IUser;
   level: RoadmapLevel;
+  summary: string;
   milestones: RoadmapMilestone[];
   generatedAt: Date;
 }

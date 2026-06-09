@@ -1,5 +1,6 @@
 import { interviewSessionRepository } from "@/repositories/interview-session.repository";
 import { questionRepository } from "@/repositories/question.repository";
+import { progressService } from "@/services/progress.service";
 import { getAIClient } from "@/lib/ai/client";
 import {
   buildInterviewEvalPrompt,
@@ -138,7 +139,7 @@ class InterviewService {
   }
 
   // Finalizes a session: computes the total (average) score and marks it
-  // completed. Intentionally self-contained — progress tracking is Phase 7.
+  // completed, then folds the result into the user's progress (Phase 7).
   async completeSession(userId: string, sessionId: string): Promise<IInterviewSession> {
     const session = await interviewSessionRepository.findById(sessionId);
     if (!session) throw new NotFoundError("Interview session");
@@ -156,7 +157,16 @@ class InterviewService {
       totalScore,
     });
 
-    return updated as unknown as IInterviewSession;
+    const result = updated as unknown as IInterviewSession;
+
+    // Best-effort: progress tracking must never break session completion.
+    try {
+      await progressService.recordInterviewSession(userId, result);
+    } catch (error) {
+      console.error("[interview.completeSession] progress update failed:", error);
+    }
+
+    return result;
   }
 
   async getSession(userId: string, sessionId: string): Promise<IInterviewSession> {

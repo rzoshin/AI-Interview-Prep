@@ -1,14 +1,20 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { BookOpen, Brain, TrendingUp, Zap } from "lucide-react";
+import { progressService } from "@/services/progress.service";
 
-async function getStats() {
-  return {
-    questionsCompleted: 0,
-    readinessScore: 0,
-    streakDays: 0,
-    topicsExplored: 0,
-  };
+async function getStats(userId: string) {
+  try {
+    const progress = await progressService.getProgress(userId);
+    return {
+      questionsCompleted: progress?.completedQuestions?.length ?? 0,
+      readinessScore: progress?.readinessScore ?? 0,
+      streakDays: progressService.getStreakDays(progress),
+      topicsExplored: progress?.topicMastery?.length ?? 0,
+    };
+  } catch {
+    return { questionsCompleted: 0, readinessScore: 0, streakDays: 0, topicsExplored: 0 };
+  }
 }
 
 export default async function DashboardPage() {
@@ -16,7 +22,7 @@ export default async function DashboardPage() {
 
   if (!session?.user) redirect("/login");
 
-  const stats = await getStats();
+  const stats = await getStats(session.user.id);
   const firstName = session.user.name?.split(" ")[0] ?? "there";
 
   const statCards = [

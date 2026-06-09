@@ -6,6 +6,7 @@ import { ArrowLeft, Sparkles, Loader2, AlertCircle, RefreshCw, GraduationCap } f
 import { cn } from "@/lib/utils/cn";
 import { useAIAnswer } from "@/features/ai-answer/hooks/useAIAnswer";
 import { AnswerTabs } from "@/features/ai-answer/components/AnswerTabs";
+import { useMarkStudied } from "@/features/progress/hooks/useMarkStudied";
 import type { IQuestion, ITopic } from "@/types/index";
 
 interface StudyViewProps {
@@ -38,6 +39,9 @@ export function StudyView({ id }: StudyViewProps) {
   const question = data?.data;
 
   const { answer, isLoading: answerLoading, isGenerating, error, generate } = useAIAnswer(id);
+
+  // Count the question as studied once its answer is on screen.
+  useMarkStudied(id, !!answer);
 
   if (questionLoading) {
     return (
