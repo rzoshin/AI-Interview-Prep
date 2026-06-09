@@ -25,14 +25,21 @@ export async function POST(req: Request) {
       return errorResponse("No file provided", 400);
     }
 
-    const { uploadId, fileUrl } = await pdfService.upload(file, session.user.id);
-
-    // Fire-and-forget extraction — client polls /api/admin/pdf/[id]/status
-    pdfService.extract(uploadId).catch((err) => {
-      console.error(`[PDF extraction failed for ${uploadId}]`, err);
-    });
-
-    return successResponse({ uploadId, fileUrl, status: "processing" }, 201);
+    const { uploadId, fileUrl } = await pdfService.upload(
+      file,
+      session.user.id
+    );
+    
+    await pdfService.extract(uploadId);
+    
+    return successResponse(
+      {
+        uploadId,
+        fileUrl,
+        status: "completed",
+      },
+      201
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload failed";
     console.error("[POST /api/admin/pdf]", error);
