@@ -54,20 +54,39 @@ export const authConfig: NextAuthConfig = {
       }
       return true;
     },
-    async jwt({ token, user }) {
-      // On initial sign-in, sync id + role from the MongoDB user document.
-      // This is required for OAuth (Google), whose `user` object has no Mongo
-      // _id or role — without this the session id is the OAuth id (not a valid
-      // ObjectId) and the role always defaults to "user".
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session) {
+        const patch = session as { image?: string; name?: string };
+        if (patch.image !== undefined) token.picture = patch.image;
+        if (patch.name !== undefined) token.name = patch.name;
+        return token;
+      }
+
+      // Backfill avatar for sessions created before picture was stored on the token.
+      if (!user && token.id && token.picture === undefined) {
+        await connectDB();
+        const dbUser = await User.findById(token.id as string).select("avatar name").lean();
+        if (dbUser) {
+          token.picture = dbUser.avatar ?? null;
+          if (!token.name && dbUser.name) token.name = dbUser.name;
+        } else {
+          token.picture = null;
+        }
+      }
+
+      // On initial sign-in, sync id, role, and avatar from MongoDB.
       if (user) {
         await connectDB();
         const dbUser = await User.findOne({ email: user.email }).lean();
         if (dbUser) {
           token.id = dbUser._id.toString();
           token.role = dbUser.role ?? "user";
+          token.picture = dbUser.avatar ?? user.image ?? null;
+          token.name = dbUser.name ?? user.name;
         } else {
           token.id = user.id;
           token.role = (user as { role?: string }).role ?? "user";
+          token.picture = user.image ?? null;
         }
       }
       return token;
@@ -76,6 +95,8 @@ export const authConfig: NextAuthConfig = {
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.image = (token.picture as string | null | undefined) ?? null;
+        if (token.name) session.user.name = token.name as string;
       }
       return session;
     },

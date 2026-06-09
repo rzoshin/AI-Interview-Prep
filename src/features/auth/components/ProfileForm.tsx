@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Loader2, User } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { IUser } from "@/types";
+import { AvatarUploadButton } from "@/components/shared/AvatarUploadButton";
 
 interface ProfileFormProps {
   user: IUser;
@@ -41,18 +42,12 @@ export function ProfileForm({ user }: ProfileFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center gap-4 p-6 rounded-xl border border-border bg-card">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 shrink-0">
-          {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={user.avatar}
-              alt={user.name}
-              className="h-16 w-16 rounded-full object-cover"
-            />
-          ) : (
-            <User className="h-8 w-8 text-primary" />
-          )}
-        </div>
+        <AvatarUploadButton
+          src={user.avatar}
+          name={user.name}
+          size="lg"
+          showLabel
+        />
         <div>
           <p className="font-semibold">{user.name}</p>
           <p className="text-sm text-muted-foreground">{user.email}</p>

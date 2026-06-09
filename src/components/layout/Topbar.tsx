@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Monitor, LogOut, User, Menu, Bell } from "lucide-react";
+import { Moon, Sun, Monitor, LogOut, Menu, Bell } from "lucide-react";
 import { useSidebarStore } from "@/stores/sidebar.store";
+import { AvatarUploadButton } from "@/components/shared/AvatarUploadButton";
 
 export function Topbar() {
   const { data: session } = useSession();
@@ -12,8 +14,6 @@ export function Topbar() {
   const { setMobileOpen, isMobileOpen } = useSidebarStore();
   const [mounted, setMounted] = useState(false);
 
-  // Theme is only known on the client. Render a stable icon on the server and
-  // first client render to avoid a hydration mismatch, then show the real one.
   useEffect(() => setMounted(true), []);
 
   const themeIcons = {
@@ -56,22 +56,15 @@ export function Topbar() {
         </button>
 
         <div className="flex items-center gap-2 pl-2 border-l border-border">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-            {session?.user?.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={session.user.image}
-                alt={session.user.name ?? "User"}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <User className="h-4 w-4 text-primary" />
-            )}
-          </div>
-          <div className="hidden sm:block">
+          <AvatarUploadButton
+            src={session?.user?.image}
+            name={session?.user?.name}
+            size="sm"
+          />
+          <Link href="/profile" className="hidden sm:block hover:opacity-80 transition-opacity">
             <p className="text-sm font-medium leading-none">{session?.user?.name ?? "User"}</p>
             <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
-          </div>
+          </Link>
         </div>
 
         <button
