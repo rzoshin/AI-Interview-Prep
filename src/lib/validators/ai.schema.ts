@@ -58,6 +58,18 @@ export const interviewEvaluationSchema = z.object({
 
 export type InterviewEvaluation = z.infer<typeof interviewEvaluationSchema>;
 
+export const studyEvaluationSchema = z.object({
+  verdict: z
+    .enum(["correct", "partial", "incorrect"])
+    .catch("partial")
+    .default("partial"),
+  score: z.coerce.number().min(0).max(10).catch(0).default(0),
+  feedback: z.string().catch("").default(""),
+  improvements: z.array(z.string()).catch([]).default([]),
+});
+
+export type StudyEvaluation = z.infer<typeof studyEvaluationSchema>;
+
 // Shape of the AI-generated learning roadmap (json_object mode). Resilient
 // defaults so a partial model response still parses.
 export const roadmapMilestoneSchema = z.object({

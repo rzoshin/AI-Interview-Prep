@@ -29,6 +29,14 @@ class QuestionRepository implements IRepository<IQuestionDocument, CreateQuestio
     return Question.findById(id).populate("topic").lean() as unknown as Promise<IQuestionDocument | null>;
   }
 
+  async findByIds(ids: string[]): Promise<IQuestionDocument[]> {
+    await connectDB();
+    if (ids.length === 0) return [];
+    return Question.find({ _id: { $in: ids } })
+      .select("topic")
+      .lean() as unknown as Promise<IQuestionDocument[]>;
+  }
+
   async findMany(
     filter: Record<string, unknown> = {},
     options: QueryOptions = {}

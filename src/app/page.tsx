@@ -1,10 +1,5 @@
-import DashboardLayout from "./(dashboard)/layout";
-import DashboardHome from "./(dashboard)/page";
+import { LandingPage } from "@/features/landing/components/LandingPage";
 
-export default function RootPage() {
-  return (
-    <DashboardLayout>
-      <DashboardHome />
-    </DashboardLayout>
-  );
+export default function HomePage() {
+  return <LandingPage />;
 }

@@ -241,20 +241,20 @@ function ConfigScreen({
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <MessageSquare className="w-5 h-5 text-primary" />
+    <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm">
+          <MessageSquare className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Mock Interview</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Mock Interview</h1>
           <p className="text-sm text-muted-foreground">
             Speak or type your answers and get instant AI scoring.
           </p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5 space-y-5">
+      <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur p-6 space-y-5 shadow-sm">
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">Topic</label>
           <select

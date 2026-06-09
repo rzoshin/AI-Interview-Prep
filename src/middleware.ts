@@ -8,7 +8,8 @@ const ADMIN_PATHS = ["/admin", "/api/admin"];
 export default auth(function middleware(req: NextAuthRequest) {
   const { pathname } = req.nextUrl;
 
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic =
+    pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   if (isPublic) return NextResponse.next();
 
   const session = req.auth;
@@ -21,7 +22,7 @@ export default auth(function middleware(req: NextAuthRequest) {
 
   const isAdmin = ADMIN_PATHS.some((p) => pathname.startsWith(p));
   if (isAdmin && (session.user as { role?: string }).role !== "admin") {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return NextResponse.next();

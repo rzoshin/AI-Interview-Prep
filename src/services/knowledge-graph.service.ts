@@ -136,7 +136,21 @@ function computeLayout(topics: TopicRow[]): Map<string, { x: number; y: number }
 async function loadRelatedTopicPairs(topics: ITopic[]): Promise<Array<[string, string]>> {
   await connectDB();
   const { questionRepository } = await import("@/repositories/question.repository");
-  const answers = await AIAnswer.find({}, { related_topics: 1, question: 1 }).lean();
+  const answers = await AIAnswer.find(
+    { related_topics: { $exists: true, $not: { $size: 0 } } },
+    { related_topics: 1, question: 1 }
+  ).lean();
+
+  if (answers.length === 0) return [];
+
+  const questionIds = [...new Set(answers.map((a) => String(a.question)))];
+  const questions = await questionRepository.findByIds(questionIds);
+  const topicByQuestionId = new Map(
+    questions.map((q) => [
+      String(q._id),
+      isPopulatedTopic(q.topic) ? String(q.topic._id) : String(q.topic),
+    ])
+  );
 
   const pairs = new Set<string>();
   const result: Array<[string, string]> = [];
@@ -145,12 +159,8 @@ async function loadRelatedTopicPairs(topics: ITopic[]): Promise<Array<[string, s
     const related = (answer.related_topics as string[]) ?? [];
     if (related.length === 0) continue;
 
-    const question = await questionRepository.findById(String(answer.question));
-    if (!question) continue;
-
-    const sourceTopicId = isPopulatedTopic(question.topic)
-    ? String(question.topic._id)
-    : String(question.topic);
+    const sourceTopicId = topicByQuestionId.get(String(answer.question));
+    if (!sourceTopicId) continue;
 
     for (const name of related) {
       const targetId = matchTopicId(name, topics);

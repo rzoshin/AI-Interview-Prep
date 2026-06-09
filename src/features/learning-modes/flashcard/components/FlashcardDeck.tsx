@@ -70,6 +70,19 @@ export function FlashcardDeck({ topicId }: FlashcardDeckProps) {
         </div>
       ) : (
         <>
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+              <span>Deck progress</span>
+              <span className="tabular-nums">{index + 1} / {total}</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all rounded-full"
+                style={{ width: `${((index + 1) / total) * 100}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 text-center">Swipe or use arrow keys to navigate</p>
+          </div>
           <div className="relative overflow-hidden">
             <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div

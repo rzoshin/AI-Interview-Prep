@@ -6,7 +6,7 @@ import { SessionProvider } from "@/components/shared/SessionProvider";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex h-screen overflow-hidden bg-background gradient-mesh">
         <Sidebar />
         <MobileSidebar />
         <div className="flex flex-1 flex-col overflow-hidden">

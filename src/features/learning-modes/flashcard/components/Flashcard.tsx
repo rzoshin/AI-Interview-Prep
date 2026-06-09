@@ -59,7 +59,7 @@ export function Flashcard({ questionId, questionText }: FlashcardProps) {
     <button
       type="button"
       onClick={() => setFlipped((f) => !f)}
-      className="relative block w-full h-80 rounded-2xl border border-border bg-card p-8 text-left cursor-pointer select-none overflow-hidden"
+      className="relative block w-full h-96 rounded-2xl border border-border/80 bg-card/90 backdrop-blur shadow-lg hover:shadow-xl transition-shadow p-8 text-left cursor-pointer select-none overflow-hidden"
     >
       <AnimatePresence mode="wait" initial={false}>
         {!flipped ? (

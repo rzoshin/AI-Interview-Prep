@@ -4,48 +4,48 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-background: hsl(220 33% 98%);
+  --color-foreground: hsl(222 47% 11%);
   --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(222.2 84% 4.9%);
+  --color-card-foreground: hsl(222 47% 11%);
   --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(222.2 84% 4.9%);
-  --color-primary: hsl(221.2 83.2% 53.3%);
+  --color-popover-foreground: hsl(222 47% 11%);
+  --color-primary: hsl(221 83% 53%);
   --color-primary-foreground: hsl(210 40% 98%);
-  --color-secondary: hsl(210 40% 96.1%);
-  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
-  --color-muted: hsl(210 40% 96.1%);
-  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
-  --color-accent: hsl(210 40% 96.1%);
-  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
-  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-secondary: hsl(220 25% 95%);
+  --color-secondary-foreground: hsl(222 47% 11%);
+  --color-muted: hsl(220 20% 94%);
+  --color-muted-foreground: hsl(215 16% 47%);
+  --color-accent: hsl(220 25% 95%);
+  --color-accent-foreground: hsl(222 47% 11%);
+  --color-destructive: hsl(0 84% 60%);
   --color-destructive-foreground: hsl(210 40% 98%);
-  --color-border: hsl(214.3 31.8% 91.4%);
-  --color-input: hsl(214.3 31.8% 91.4%);
-  --color-ring: hsl(221.2 83.2% 53.3%);
-  --radius: 0.5rem;
+  --color-border: hsl(220 20% 90%);
+  --color-input: hsl(220 20% 90%);
+  --color-ring: hsl(221 83% 53%);
+  --radius: 0.75rem;
 }
 
 .dark {
-  --color-background: hsl(222.2 84% 4.9%);
+  --color-background: hsl(222 47% 6%);
   --color-foreground: hsl(210 40% 98%);
-  --color-card: hsl(222.2 84% 4.9%);
+  --color-card: hsl(222 40% 9%);
   --color-card-foreground: hsl(210 40% 98%);
-  --color-popover: hsl(222.2 84% 4.9%);
+  --color-popover: hsl(222 40% 9%);
   --color-popover-foreground: hsl(210 40% 98%);
-  --color-primary: hsl(217.2 91.2% 59.8%);
-  --color-primary-foreground: hsl(222.2 47.4% 11.2%);
-  --color-secondary: hsl(217.2 32.6% 17.5%);
+  --color-primary: hsl(217 91% 60%);
+  --color-primary-foreground: hsl(222 47% 11%);
+  --color-secondary: hsl(217 33% 15%);
   --color-secondary-foreground: hsl(210 40% 98%);
-  --color-muted: hsl(217.2 32.6% 17.5%);
-  --color-muted-foreground: hsl(215 20.2% 65.1%);
-  --color-accent: hsl(217.2 32.6% 17.5%);
+  --color-muted: hsl(217 33% 15%);
+  --color-muted-foreground: hsl(215 20% 65%);
+  --color-accent: hsl(217 33% 15%);
   --color-accent-foreground: hsl(210 40% 98%);
-  --color-destructive: hsl(0 62.8% 30.6%);
+  --color-destructive: hsl(0 63% 31%);
   --color-destructive-foreground: hsl(210 40% 98%);
-  --color-border: hsl(217.2 32.6% 17.5%);
-  --color-input: hsl(217.2 32.6% 17.5%);
-  --color-ring: hsl(224.3 76.3% 48%);
+  --color-border: hsl(217 33% 18%);
+  --color-input: hsl(217 33% 18%);
+  --color-ring: hsl(224 76% 48%);
 }
 
 * {
@@ -69,5 +69,14 @@ body {
     &::-webkit-scrollbar {
       display: none;
     }
+  }
+  .gradient-mesh {
+    background-image:
+      radial-gradient(at 0% 0%, hsl(221 83% 53% / 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(262 83% 58% / 0.06) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(221 83% 53% / 0.05) 0px, transparent 50%);
+  }
+  .glass-card {
+    @apply rounded-2xl border border-border/80 bg-card/80 backdrop-blur-sm shadow-sm;
   }
 }

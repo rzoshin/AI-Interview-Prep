@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils/cn";
 import { useSidebarStore } from "@/stores/sidebar.store";
 
 const NAV_ITEMS = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/questions", icon: BookOpen, label: "Questions" },
   { href: "/learn/study", icon: Brain, label: "Study Mode" },
   { href: "/learn/quiz", icon: GraduationCap, label: "Quiz Mode" },

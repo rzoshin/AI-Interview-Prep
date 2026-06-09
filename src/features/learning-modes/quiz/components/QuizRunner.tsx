@@ -16,6 +16,9 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { useTopicQuiz } from "../hooks/useTopicQuiz";
 import { useRecordQuiz } from "../hooks/useRecordQuiz";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import type { QuizQuestion } from "@/types/index";
 
 interface QuizRunnerProps {
@@ -54,10 +57,10 @@ export function QuizRunner({ topicId }: QuizRunnerProps) {
             <p className="text-xs text-muted-foreground max-w-md">
               {error ?? "No quiz questions were produced. Please try again."}
             </p>
-            <button onClick={() => retry()} className={primaryBtn}>
+            <Button onClick={() => retry()}>
               <RefreshCw className="w-4 h-4" />
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -158,24 +161,24 @@ function QuizGame({
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <Header topicName={topicName} onRegenerate={onRegenerate} isRegenerating={isRegenerating} />
-        <div className="rounded-xl border border-border bg-card p-6 mt-4 text-center">
-          <p className="text-sm text-muted-foreground">Your score</p>
-          <p className="text-4xl font-bold text-foreground mt-1">
-            {score}/{quiz.length}
-          </p>
-          <p
-            className={cn(
-              "text-sm font-medium mt-1",
-              pct >= 70 ? "text-emerald-600" : pct >= 40 ? "text-amber-600" : "text-rose-600"
-            )}
-          >
-            {pct}%
-          </p>
-          <button onClick={reset} className={cn(primaryBtn, "mx-auto mt-4")}>
-            <RefreshCw className="w-4 h-4" />
-            Retry Quiz
-          </button>
-        </div>
+        <Card className="mt-4">
+          <CardContent className="p-8 text-center">
+            <p className="text-sm text-muted-foreground">Your score</p>
+            <p className="text-5xl font-bold text-foreground mt-2">
+              {score}/{quiz.length}
+            </p>
+            <Badge
+              variant={pct >= 70 ? "success" : pct >= 40 ? "warning" : "destructive"}
+              className="mt-3"
+            >
+              {pct}%
+            </Badge>
+            <Button onClick={reset} className="mx-auto mt-6">
+              <RefreshCw className="w-4 h-4" />
+              Retry Quiz
+            </Button>
+          </CardContent>
+        </Card>
 
         <div className="space-y-4 mt-6">
           {quiz.map((q, i) => {
@@ -249,34 +252,36 @@ function QuizGame({
         </span>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5">
-        <p className="text-xs text-muted-foreground mb-1">
-          Question {current + 1} of {quiz.length}
-        </p>
-        <p className="text-base font-semibold text-foreground mb-4">{q.question}</p>
-        <div className="space-y-2">
-          {q.options.map((opt, j) => (
-            <button
-              key={j}
-              onClick={() => select(j)}
-              className={cn(
-                "w-full text-left text-sm px-3 py-2.5 rounded-lg border transition-colors",
-                picked === j
-                  ? "border-primary bg-primary/10 text-foreground font-medium"
-                  : "border-border hover:border-primary/40 hover:bg-accent text-foreground"
-              )}
-            >
-              {String.fromCharCode(65 + j)}. {opt}
-            </button>
-          ))}
-        </div>
+      <Card>
+        <CardContent className="p-5">
+          <Badge variant="secondary" className="mb-3">
+            Question {current + 1} of {quiz.length}
+          </Badge>
+          <p className="text-base font-semibold text-foreground mb-4">{q.question}</p>
+          <div className="space-y-2">
+            {q.options.map((opt, j) => (
+              <button
+                key={j}
+                onClick={() => select(j)}
+                className={cn(
+                  "w-full text-left text-sm px-4 py-3 rounded-xl border transition-all",
+                  picked === j
+                    ? "border-primary bg-primary/10 text-foreground font-medium shadow-sm"
+                    : "border-border hover:border-primary/40 hover:bg-accent text-foreground"
+                )}
+              >
+                {String.fromCharCode(65 + j)}. {opt}
+              </button>
+            ))}
+          </div>
 
-        <div className="flex justify-end mt-5">
-          <button onClick={goNext} disabled={picked === null} className={cn(primaryBtn, picked === null && "opacity-50 cursor-not-allowed")}>
-            {current + 1 >= quiz.length ? "Finish" : "Next"}
-          </button>
-        </div>
-      </div>
+          <div className="flex justify-end mt-5">
+            <Button onClick={goNext} disabled={picked === null}>
+              {current + 1 >= quiz.length ? "Finish" : "Next"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -314,10 +319,10 @@ function Header({
             {isRegenerating ? "Generating..." : "New quiz"}
           </button>
         )}
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+        <Badge className="gap-1.5">
           <GraduationCap className="w-3.5 h-3.5" />
           {topicName ? `${topicName} Quiz` : "Quiz"}
-        </span>
+        </Badge>
       </div>
     </div>
   );

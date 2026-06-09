@@ -7,9 +7,9 @@ export default function StudyModeLandingPage() {
   return (
     <ModeQuestionPicker
       basePath="/learn/study"
-      icon={<Brain className="w-5 h-5 text-primary" />}
+      icon={<Brain className="w-6 h-6 text-primary" />}
       title="Study Mode"
-      description="Pick a question to study with layered explanations (ELI5 to senior level)."
+      description="Pick a question, write your own answer, get AI feedback, then review layered explanations."
       ctaLabel="Study"
     />
   );

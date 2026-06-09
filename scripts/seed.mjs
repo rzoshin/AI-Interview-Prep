@@ -51,12 +51,12 @@ function hashQuestion(text) {
 // ---- Seed data --------------------------------------------------------------
 
 const TOPICS = [
-  { name: "JavaScript", slug: "javascript", description: "Core JavaScript language concepts", icon: "Code", order: 1 },
-  { name: "TypeScript", slug: "typescript", description: "Typed superset of JavaScript", icon: "FileCode", order: 2 },
-  { name: "React", slug: "react", description: "React library and ecosystem", icon: "Atom", order: 3 },
-  { name: "Node.js", slug: "node-js", description: "Server-side JavaScript runtime", icon: "Server", order: 4 },
-  { name: "Data Structures", slug: "data-structures", description: "Common data structures", icon: "Boxes", order: 5 },
-  { name: "System Design", slug: "system-design", description: "Designing scalable systems", icon: "Network", order: 6 },
+  { name: "JavaScript", slug: "javascript", description: "Core JavaScript language concepts", icon: "Code", order: 1, parentSlug: null },
+  { name: "TypeScript", slug: "typescript", description: "Typed superset of JavaScript", icon: "FileCode", order: 2, parentSlug: "javascript" },
+  { name: "React", slug: "react", description: "React library and ecosystem", icon: "Atom", order: 3, parentSlug: "typescript" },
+  { name: "Node.js", slug: "node-js", description: "Server-side JavaScript runtime", icon: "Server", order: 4, parentSlug: "javascript" },
+  { name: "Data Structures", slug: "data-structures", description: "Common data structures", icon: "Boxes", order: 5, parentSlug: null },
+  { name: "System Design", slug: "system-design", description: "Designing scalable systems", icon: "Network", order: 6, parentSlug: null },
 ];
 
 const QUESTIONS = [
@@ -91,9 +91,9 @@ async function run() {
   await mongoose.connect(MONGODB_URI, { bufferCommands: false });
   console.log(`Connected to database: "${mongoose.connection.name}"`);
 
-  // Upsert topics by slug
+  // Upsert topics by slug (two-pass: ids first, then parentTopic links)
   const slugToId = {};
-  for (const t of TOPICS) {
+  for (const { parentSlug: _parent, ...t } of TOPICS) {
     const doc = await Topic.findOneAndUpdate(
       { slug: t.slug },
       { $set: t },
@@ -101,7 +101,12 @@ async function run() {
     );
     slugToId[t.slug] = doc._id;
   }
-  console.log(`Upserted ${TOPICS.length} topics.`);
+
+  for (const t of TOPICS) {
+    const parentTopic = t.parentSlug ? slugToId[t.parentSlug] : null;
+    await Topic.updateOne({ slug: t.slug }, { $set: { parentTopic } });
+  }
+  console.log(`Upserted ${TOPICS.length} topics with hierarchy links.`);
 
   // Insert questions (skip if contentHash already exists)
   let inserted = 0;

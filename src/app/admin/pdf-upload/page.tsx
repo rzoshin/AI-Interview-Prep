@@ -93,6 +93,52 @@ export default function AdminPDFUploadPage() {
     [updateUpload]
   );
 
+  // Load historical uploads from the server
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/admin/pdf?limit=50");
+        const json = await res.json();
+        if (!json.success || !Array.isArray(json.data)) return;
+
+        const historical: UploadRecord[] = json.data.map(
+          (u: {
+            _id: string;
+            originalName: string;
+            status: string;
+            extractedCount?: number;
+            errorMessage?: string;
+          }) => ({
+            uploadId: String(u._id),
+            fileName: u.originalName,
+            status:
+              u.status === "done"
+                ? "done"
+                : u.status === "failed"
+                  ? "failed"
+                  : "processing",
+            extractedCount: u.extractedCount,
+            errorMessage: u.errorMessage,
+            selectedIds: new Set<number>(),
+            expanded: false,
+          })
+        );
+
+        setUploads((prev) => {
+          const existingIds = new Set(prev.map((p) => p.uploadId));
+          const merged = [...prev];
+          for (const h of historical) {
+            if (!existingIds.has(h.uploadId)) merged.push(h);
+          }
+          return merged;
+        });
+      } catch {
+        // ignore history load errors
+      }
+    }
+    void loadHistory();
+  }, []);
+
   // Cleanup timers on unmount
   useEffect(() => {
     const timers = pollTimers.current;

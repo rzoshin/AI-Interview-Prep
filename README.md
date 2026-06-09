@@ -1,7 +1,7 @@
 # 🚀 AI Interview Prep
 
 <p align="center">
-  <img src="./public/readme-banner.png" alt="AI Interview Prep Banner" />
+  <img src="/public/readme-banner.png" alt="AI Interview Prep Banner" />
 </p>
 
 <p align="center">

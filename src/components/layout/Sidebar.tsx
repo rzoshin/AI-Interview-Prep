@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils/cn";
 import { useSidebarStore } from "@/stores/sidebar.store";
 
 const NAV_ITEMS = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/questions", icon: BookOpen, label: "Questions" },
   { href: "/learn/study", icon: Brain, label: "Study Mode" },
   { href: "/learn/quiz", icon: GraduationCap, label: "Quiz Mode" },
@@ -69,7 +69,7 @@ export function Sidebar() {
 
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto scrollbar-thin">
         {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+          const isActive = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}
