@@ -87,6 +87,23 @@ export interface IInterviewSession {
   completedAt?: Date;
 }
 
+// A question served to the client during an interview (client drives the queue).
+export interface InterviewQuestion {
+  _id: string;
+  question: string;
+  difficulty: Difficulty;
+  topic: string;
+}
+
+// The per-answer evaluation returned to the client after submitting an answer.
+export interface InterviewEvaluationResult {
+  questionId: string;
+  score: number;
+  feedback: string;
+  improvements: string[];
+  followUps: string[];
+}
+
 export interface TopicMastery {
   topic: string | ITopic;
   score: number;

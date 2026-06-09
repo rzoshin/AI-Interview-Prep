@@ -47,6 +47,39 @@ export const startInterviewSchema = z.object({
   questionCount: z.number().int().min(1).max(20).default(5),
 });
 
+// Shape of the per-answer evaluation returned by the LLM. Every field has a
+// default so a partial model response still parses into a complete record.
+export const interviewEvaluationSchema = z.object({
+  score: z.coerce.number().min(0).max(10).catch(0).default(0),
+  feedback: z.string().catch("").default(""),
+  improvements: z.array(z.string()).catch([]).default([]),
+  followUps: z.array(z.string()).catch([]).default([]),
+});
+
+export type InterviewEvaluation = z.infer<typeof interviewEvaluationSchema>;
+
+// Supported OpenAI neural TTS voices.
+export const OPENAI_TTS_VOICES = [
+  "alloy",
+  "ash",
+  "ballad",
+  "coral",
+  "echo",
+  "fable",
+  "nova",
+  "onyx",
+  "sage",
+  "shimmer",
+  "verse",
+] as const;
+
+export const ttsRequestSchema = z.object({
+  text: z.string().min(1, "Text is required").max(4096),
+  voice: z.enum(OPENAI_TTS_VOICES).default("nova"),
+});
+
+export type TtsRequestInput = z.infer<typeof ttsRequestSchema>;
+
 export type GenerateAnswerInput = z.infer<typeof generateAnswerSchema>;
 export type InterviewAnswerInput = z.infer<typeof interviewAnswerSchema>;
 export type StartInterviewInput = z.infer<typeof startInterviewSchema>;
