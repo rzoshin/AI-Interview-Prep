@@ -14,6 +14,10 @@ export interface RoadmapPromptInput {
   completedCount: number;
 }
 
+export function getDefaultRoadmapSystemPrompt(): string {
+  return SYSTEM_PROMPT;
+}
+
 const SYSTEM_PROMPT = `You are an expert technical interview coach who designs personalized study roadmaps.
 Given the learner's available topics and their current mastery, produce an ordered, step-by-step
 learning path that takes them from their current level toward "interview ready".
@@ -32,18 +36,18 @@ Rules:
 - Only reference topic slugs from the provided list. Do not duplicate a topic.
 - Do not wrap the JSON in markdown fences. Do not add keys other than those listed.`;
 
-export function buildRoadmapPrompt({
+export function buildRoadmapUserPrompt({
   topics,
   weakAreas,
   strongAreas,
   readinessScore,
   completedCount,
-}: RoadmapPromptInput): { system: string; user: string } {
+}: RoadmapPromptInput): string {
   const topicLines = topics
     .map((t) => `- ${t.name} (slug: ${t.slug}) — mastery ${t.mastery}%`)
     .join("\n");
 
-  const user = `Learner profile:
+  return `Learner profile:
 - Readiness score: ${readinessScore}%
 - Questions completed: ${completedCount}
 - Weak areas: ${weakAreas.length ? weakAreas.join(", ") : "none yet"}
@@ -53,6 +57,8 @@ Available topics (only use these slugs):
 ${topicLines || "- (no topics available)"}
 
 Design the personalized roadmap and return the JSON object now.`;
+}
 
-  return { system: SYSTEM_PROMPT, user };
+export function buildRoadmapPrompt(input: RoadmapPromptInput): { system: string; user: string } {
+  return { system: SYSTEM_PROMPT, user: buildRoadmapUserPrompt(input) };
 }

@@ -2,8 +2,15 @@ import { aiAnswerRepository } from "@/repositories/ai-answer.repository";
 import { questionRepository } from "@/repositories/question.repository";
 import { topicRepository } from "@/repositories/topic.repository";
 import { getAIClient } from "@/lib/ai/client";
-import { buildAnswerPrompt, ANSWER_PROMPT_VERSION } from "@/lib/ai/prompts/answer.prompt";
-import { buildTopicQuizPrompt } from "@/lib/ai/prompts/quiz.prompt";
+import { getActivePromptContent } from "@/lib/ai/prompt-loader";
+import {
+  buildAnswerUserPrompt,
+  getDefaultAnswerSystemPrompt,
+} from "@/lib/ai/prompts/answer.prompt";
+import {
+  buildTopicQuizUserPrompt,
+  getDefaultQuizSystemPrompt,
+} from "@/lib/ai/prompts/quiz.prompt";
 import { generatedAnswerSchema, topicQuizSchema } from "@/lib/validators/ai.schema";
 import { cache, CACHE_KEYS, CACHE_TTL } from "@/lib/redis/cache";
 import type { IAIAnswer, ITopic, QuizQuestion } from "@/types";
@@ -55,7 +62,8 @@ class AIService {
         ? (question.topic as unknown as ITopic).name
         : "General";
 
-    const { system, user } = buildAnswerPrompt({
+    const answerPrompt = await getActivePromptContent("answer", getDefaultAnswerSystemPrompt);
+    const user = buildAnswerUserPrompt({
       question: question.question,
       topic: topicName,
       difficulty: question.difficulty,
@@ -66,7 +74,7 @@ class AIService {
       const response = await ai.client.chat.completions.create({
         model: ai.model,
         messages: [
-          { role: "system", content: system },
+          { role: "system", content: answerPrompt.content },
           { role: "user", content: user },
         ],
         temperature: 0.3,
@@ -86,7 +94,7 @@ class AIService {
       question: questionId,
       ...parsed,
       generatedBy: ai.provider,
-      promptVersion: ANSWER_PROMPT_VERSION,
+      promptVersion: answerPrompt.version,
     });
 
     const result = saved as unknown as IAIAnswer;
@@ -124,7 +132,8 @@ class AIService {
       );
     }
 
-    const { system, user } = buildTopicQuizPrompt({
+    const quizPrompt = await getActivePromptContent("quiz", getDefaultQuizSystemPrompt);
+    const user = buildTopicQuizUserPrompt({
       topicName: topic.name,
       sampleQuestions,
     });
@@ -134,7 +143,7 @@ class AIService {
       const response = await ai.client.chat.completions.create({
         model: ai.model,
         messages: [
-          { role: "system", content: system },
+          { role: "system", content: quizPrompt.content },
           { role: "user", content: user },
         ],
         temperature: 0.4,

@@ -12,12 +12,19 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
 import type { IQuestion, ITopic } from "@/types/index";
 
 interface QuestionRow extends Omit<IQuestion, "topic"> {
   topic: ITopic | string;
+}
+
+interface FlatTopic {
+  _id: string;
+  name: string;
 }
 
 interface EditModalProps {
@@ -39,6 +46,9 @@ export default function AdminQuestionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<QuestionRow | null>(null);
+  const [creatingQuestion, setCreatingQuestion] = useState(false);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [topics, setTopics] = useState<FlatTopic[]>([]);
 
   const totalPages = Math.ceil(total / LIMIT);
 
@@ -75,6 +85,23 @@ export default function AdminQuestionsPage() {
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
+
+  useEffect(() => {
+    fetch("/api/topics")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.success) return;
+        const flat: FlatTopic[] = [];
+        function walk(nodes: Array<{ _id: string; name: string; children?: typeof nodes }>) {
+          for (const n of nodes) {
+            flat.push({ _id: n._id, name: n.name });
+            if (n.children?.length) walk(n.children);
+          }
+        }
+        walk(json.data ?? []);
+        setTopics(flat);
+      });
+  }, []);
 
   async function togglePublish(q: QuestionRow) {
     setTogglingId(q._id);
@@ -118,6 +145,39 @@ export default function AdminQuestionsPage() {
     setEditingQuestion(null);
   }
 
+  async function regenerateAnswer(id: string) {
+    setRegeneratingId(id);
+    try {
+      const res = await fetch(`/api/ai/generate/${id}?force=true`, { method: "POST" });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Regeneration failed");
+      toast.success("AI answer regenerated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Regeneration failed");
+    } finally {
+      setRegeneratingId(null);
+    }
+  }
+
+  async function handleCreate(data: {
+    topic: string;
+    question: string;
+    difficulty: "easy" | "medium" | "hard";
+    tags: string[];
+    isPublished: boolean;
+  }) {
+    const res = await fetch("/api/questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || "Create failed");
+    setCreatingQuestion(false);
+    toast.success("Question created");
+    fetchQuestions();
+  }
+
   const topicName = (q: QuestionRow) =>
     typeof q.topic === "object" && q.topic !== null
       ? (q.topic as ITopic).name
@@ -132,7 +192,10 @@ export default function AdminQuestionsPage() {
             {total.toLocaleString()} total questions
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+        <button
+          onClick={() => setCreatingQuestion(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           New Question
         </button>
@@ -252,6 +315,18 @@ export default function AdminQuestionsPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          onClick={() => regenerateAnswer(q._id)}
+                          disabled={regeneratingId === q._id}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+                          title="Regenerate AI answer"
+                        >
+                          {regeneratingId === q._id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
                           onClick={() => togglePublish(q)}
                           disabled={togglingId === q._id}
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -321,6 +396,14 @@ export default function AdminQuestionsPage() {
       )}
 
       {/* Edit modal */}
+      {creatingQuestion && (
+        <CreateModal
+          topics={topics}
+          onClose={() => setCreatingQuestion(false)}
+          onCreate={handleCreate}
+        />
+      )}
+
       {editingQuestion && (
         <EditModal
           question={editingQuestion}
@@ -342,6 +425,139 @@ function DifficultyBadge({ difficulty }: { difficulty: "easy" | "medium" | "hard
     <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", config[difficulty])}>
       {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
     </span>
+  );
+}
+
+function CreateModal({
+  topics,
+  onClose,
+  onCreate,
+}: {
+  topics: FlatTopic[];
+  onClose: () => void;
+  onCreate: (data: {
+    topic: string;
+    question: string;
+    difficulty: "easy" | "medium" | "hard";
+    tags: string[];
+    isPublished: boolean;
+  }) => Promise<void>;
+}) {
+  const [form, setForm] = useState({
+    topic: topics[0]?._id ?? "",
+    question: "",
+    difficulty: "medium" as "easy" | "medium" | "hard",
+    tags: "",
+    isPublished: false,
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onCreate({
+        topic: form.topic,
+        question: form.question,
+        difficulty: form.difficulty,
+        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        isPublished: form.isPublished,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Create failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="font-semibold text-foreground">New Question</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={submit} className="p-6 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Topic</label>
+            <select
+              value={form.topic}
+              onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))}
+              required
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background"
+            >
+              {topics.map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Question</label>
+            <textarea
+              value={form.question}
+              onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
+              rows={3}
+              required
+              minLength={10}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background resize-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
+            <select
+              value={form.difficulty}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  difficulty: e.target.value as "easy" | "medium" | "hard",
+                }))
+              }
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background"
+            >
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Tags (comma-separated)</label>
+            <input
+              type="text"
+              value={form.tags}
+              onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+              placeholder="javascript, react"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background"
+            />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isPublished}
+              onChange={(e) => setForm((f) => ({ ...f, isPublished: e.target.checked }))}
+              className="w-4 h-4 rounded accent-primary"
+            />
+            <span className="text-sm">Published</span>
+          </label>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-accent">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground disabled:opacity-60"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Create question
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 

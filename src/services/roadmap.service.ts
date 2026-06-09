@@ -2,7 +2,11 @@ import { roadmapRepository } from "@/repositories/roadmap.repository";
 import { topicRepository } from "@/repositories/topic.repository";
 import { progressService } from "@/services/progress.service";
 import { getAIClient } from "@/lib/ai/client";
-import { buildRoadmapPrompt } from "@/lib/ai/prompts/roadmap.prompt";
+import { getActivePromptContent } from "@/lib/ai/prompt-loader";
+import {
+  buildRoadmapUserPrompt,
+  getDefaultRoadmapSystemPrompt,
+} from "@/lib/ai/prompts/roadmap.prompt";
 import { roadmapSchema } from "@/lib/validators/ai.schema";
 import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 import type { IRoadmap, ITopic, RoadmapLevel } from "@/types";
@@ -55,7 +59,8 @@ class RoadmapService {
       );
     }
 
-    const { system, user } = buildRoadmapPrompt({
+    const roadmapPrompt = await getActivePromptContent("roadmap", getDefaultRoadmapSystemPrompt);
+    const user = buildRoadmapUserPrompt({
       topics: topicInputs,
       weakAreas: weakNames,
       strongAreas: strongNames,
@@ -68,7 +73,7 @@ class RoadmapService {
       const response = await ai.client.chat.completions.create({
         model: ai.model,
         messages: [
-          { role: "system", content: system },
+          { role: "system", content: roadmapPrompt.content },
           { role: "user", content: user },
         ],
         temperature: 0.5,

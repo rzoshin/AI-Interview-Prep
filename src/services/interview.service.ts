@@ -2,8 +2,10 @@ import { interviewSessionRepository } from "@/repositories/interview-session.rep
 import { questionRepository } from "@/repositories/question.repository";
 import { progressService } from "@/services/progress.service";
 import { getAIClient } from "@/lib/ai/client";
+import { getActivePromptContent } from "@/lib/ai/prompt-loader";
 import {
-  buildInterviewEvalPrompt,
+  buildInterviewEvalUserPrompt,
+  getDefaultInterviewSystemPrompt,
 } from "@/lib/ai/prompts/interview.prompt";
 import { interviewEvaluationSchema } from "@/lib/validators/ai.schema";
 import { AuthorizationError, NotFoundError, ValidationError } from "@/lib/utils/errors";
@@ -90,7 +92,8 @@ class InterviewService {
         ? (question.topic as unknown as ITopic).name
         : "General";
 
-    const { system, user } = buildInterviewEvalPrompt({
+    const interviewPrompt = await getActivePromptContent("interview", getDefaultInterviewSystemPrompt);
+    const user = buildInterviewEvalUserPrompt({
       question: question.question,
       topic: topicName,
       difficulty: question.difficulty,
@@ -102,7 +105,7 @@ class InterviewService {
       const response = await ai.client.chat.completions.create({
         model: ai.model,
         messages: [
-          { role: "system", content: system },
+          { role: "system", content: interviewPrompt.content },
           { role: "user", content: user },
         ],
         temperature: 0.3,

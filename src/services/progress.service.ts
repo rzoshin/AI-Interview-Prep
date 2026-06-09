@@ -173,7 +173,7 @@ class ProgressService {
       readinessScore,
     });
 
-    await cache.del(CACHE_KEYS.progress(userId));
+    await cache.del(CACHE_KEYS.progress(userId), CACHE_KEYS.knowledgeGraph(userId));
   }
 
   // readiness = 0.5*avgMastery + 0.3*interviewPerf + 0.2*coverage (all 0-100).

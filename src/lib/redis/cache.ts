@@ -7,6 +7,7 @@ export const CACHE_TTL = {
   TOPIC_QUIZ: 86400,        // 24 h
   TOPICS_ALL: 3600,         // 1 h
   PROGRESS: 300,            // 5 min
+  KNOWLEDGE_GRAPH: 300,     // 5 min
 } as const;
 
 export const CACHE_KEYS = {
@@ -17,6 +18,7 @@ export const CACHE_KEYS = {
   topicQuiz: (topicId: string) => `ai:quiz:${topicId}`,
   topicsAll: () => `topics:all`,
   progress: (userId: string) => `progress:${userId}`,
+  knowledgeGraph: (userId: string) => `kg:${userId}`,
 } as const;
 
 async function get<T>(key: string): Promise<T | null> {

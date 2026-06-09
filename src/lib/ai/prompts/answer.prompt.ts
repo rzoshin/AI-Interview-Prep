@@ -8,6 +8,10 @@ export interface AnswerPromptInput {
   difficulty: Difficulty;
 }
 
+export function getDefaultAnswerSystemPrompt(): string {
+  return SYSTEM_PROMPT;
+}
+
 const SYSTEM_PROMPT = `You are an expert technical interviewer and educator.
 For a given interview question, produce a single comprehensive study record as a JSON object.
 
@@ -25,15 +29,20 @@ Return ONLY a valid JSON object with EXACTLY these keys:
 
 Do not include any keys other than those listed. Do not wrap the JSON in markdown fences.`;
 
-export function buildAnswerPrompt({ question, topic, difficulty }: AnswerPromptInput): {
-  system: string;
-  user: string;
-} {
-  const user = `Topic: ${topic}
+export function buildAnswerUserPrompt({ question, topic, difficulty }: AnswerPromptInput): string {
+  return `Topic: ${topic}
 Difficulty: ${difficulty}
 Question: ${question}
 
 Generate the JSON study record for this question now.`;
+}
 
-  return { system: SYSTEM_PROMPT, user };
+export function buildAnswerPrompt({ question, topic, difficulty }: AnswerPromptInput): {
+  system: string;
+  user: string;
+} {
+  return {
+    system: SYSTEM_PROMPT,
+    user: buildAnswerUserPrompt({ question, topic, difficulty }),
+  };
 }

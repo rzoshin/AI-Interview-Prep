@@ -173,7 +173,7 @@ export interface IPrompt {
   _id: string;
   name: string;
   content: string;
-  model: AIModel;
+  aiModel: "gpt-5" | "claude" | "gemini";
   version: string;
   isActive: boolean;
   createdAt: Date;

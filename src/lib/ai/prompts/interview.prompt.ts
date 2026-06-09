@@ -9,6 +9,10 @@ export interface InterviewEvalPromptInput {
   userAnswer: string;
 }
 
+export function getDefaultInterviewSystemPrompt(): string {
+  return SYSTEM_PROMPT;
+}
+
 const SYSTEM_PROMPT = `You are an expert technical interviewer evaluating a candidate's spoken answer to an interview question.
 Assess the answer fairly and constructively, the way a senior engineer would in a real interview.
 
@@ -26,13 +30,13 @@ Return ONLY a valid JSON object with EXACTLY these keys:
 Score strictly by the quality and correctness of the answer, not its length.
 Do not include any keys other than those listed. Do not wrap the JSON in markdown fences.`;
 
-export function buildInterviewEvalPrompt({
+export function buildInterviewEvalUserPrompt({
   question,
   topic,
   difficulty,
   userAnswer,
-}: InterviewEvalPromptInput): { system: string; user: string } {
-  const user = `Topic: ${topic}
+}: InterviewEvalPromptInput): string {
+  return `Topic: ${topic}
 Difficulty: ${difficulty}
 Interview Question: ${question}
 
@@ -42,6 +46,11 @@ ${userAnswer}
 """
 
 Evaluate this answer and return the JSON object now.`;
+}
 
-  return { system: SYSTEM_PROMPT, user };
+export function buildInterviewEvalPrompt(input: InterviewEvalPromptInput): {
+  system: string;
+  user: string;
+} {
+  return { system: SYSTEM_PROMPT, user: buildInterviewEvalUserPrompt(input) };
 }
